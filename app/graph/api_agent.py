@@ -1,5 +1,4 @@
 from langgraph.graph import StateGraph, END
-
 from app.state.schema import AgentState
 from app.nodes.intent import parse_query
 from app.nodes.approval import human_approval
@@ -7,16 +6,9 @@ from app.nodes.users import user_lookup
 from app.nodes.posts import post_lookup
 from app.nodes.comments import comment_lookup
 
-
-# ---------------------------
-# Graph initialization
-# ---------------------------
 graph = StateGraph(AgentState)
 
 
-# ---------------------------
-# Core nodes
-# ---------------------------
 graph.add_node("parse_query", parse_query)
 
 graph.add_node("approve_user", lambda s: human_approval(s, "User Lookup"))
@@ -27,16 +19,9 @@ graph.add_node("user_lookup", user_lookup)
 graph.add_node("post_lookup", post_lookup)
 graph.add_node("comment_lookup", comment_lookup)
 
-
-# ---------------------------
-# Entry point
-# ---------------------------
 graph.set_entry_point("parse_query")
 
 
-# ---------------------------
-# Routing logic
-# ---------------------------
 def route_by_plan(state: AgentState):
     """
     Route execution based on the entity extracted
@@ -61,24 +46,12 @@ graph.add_conditional_edges(
     },
 )
 
-
-# ---------------------------
-# Approval → execution edges
-# ---------------------------
 graph.add_edge("approve_user", "user_lookup")
 graph.add_edge("approve_post", "post_lookup")
 graph.add_edge("approve_comment", "comment_lookup")
 
-
-# ---------------------------
-# Terminal edges
-# ---------------------------
 graph.add_edge("user_lookup", END)
 graph.add_edge("post_lookup", END)
 graph.add_edge("comment_lookup", END)
 
-
-# ---------------------------
-# Compile agent
-# ---------------------------
 agent = graph.compile()
