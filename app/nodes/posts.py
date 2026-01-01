@@ -1,8 +1,8 @@
-from app.services.jsonplaceholder import get_posts_by_user
+from app.services.jsonplaceholder import get_users, get_posts_by_user
 
 
-def fetch_posts(state):
-    if not getattr(state, "user", None):
-        return {"approved": False, "stop_reason": "No user available to fetch posts for"}
-    posts = get_posts_by_user(state.user["id"])
-    return {"posts": posts[: state.max_posts]}
+def post_count(state):
+    users = get_users()
+    user = users[0]  # simplified lookup
+    posts = get_posts_by_user(user["id"])
+    return {"result": f"{user['name']} has {len(posts)} posts"}

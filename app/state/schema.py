@@ -1,16 +1,23 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Literal
 
 
 class AgentState(BaseModel):
     query: str
 
-    target_user_name: Optional[str] = None
-    max_posts: Optional[int] = None
+    intent: Optional[
+        Literal[
+            "USER_LOOKUP",
+            "POST_COUNT",
+            "COMMENT_EXISTENCE",
+            "COMMENT_LANGUAGE",
+            "UNKNOWN",
+        ]
+    ] = None
 
-    user: Optional[Dict] = None
+    users: Optional[List[Dict]] = None
     posts: Optional[List[Dict]] = None
     comments: Optional[List[Dict]] = None
 
+    result: Optional[str] = None
     approved: bool = True
-    stop_reason: Optional[str] = None

@@ -1,8 +1,17 @@
-from app.services.jsonplaceholder import get_comments_by_post
+from app.services.jsonplaceholder import (
+    get_users,
+    get_posts_by_user,
+    get_comments_by_post,
+)
 
 
-def fetch_comments(state):
-    all_comments = []
-    for post in state.posts:
-        all_comments.extend(get_comments_by_post(post["id"]))
-    return {"comments": all_comments}
+def comment_existence(state):
+    users = get_users()
+    user = users[0]
+    posts = get_posts_by_user(user["id"])
+
+    comments = []
+    for p in posts:
+        comments.extend(get_comments_by_post(p["id"]))
+
+    return {"result": f"Found {len(comments)} comments"}
