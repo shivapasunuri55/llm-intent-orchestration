@@ -1,17 +1,16 @@
-from app.services.jsonplaceholder import (
-    get_users,
-    get_posts_by_user,
-    get_comments_by_post,
-)
+from app.services.jsonplaceholder import get_comments_by_post
+from app.utils.field_validation import validate_filters
 
 
-def comment_existence(state):
-    users = get_users()
-    user = users[0]
-    posts = get_posts_by_user(user["id"])
+def comment_lookup(state):
+    plan = state.plan
+
+    if not validate_filters("comment", plan.filters):
+        return {"result": "Invalid filter field for comment entity."}
 
     comments = []
-    for p in posts:
-        comments.extend(get_comments_by_post(p["id"]))
+    for f in plan.filters or []:
+        if f.field == "postId":
+            comments.extend(get_comments_by_post(int(f.value)))
 
-    return {"result": f"Found {len(comments)} comments"}
+    return {"data": comments, "result": f"Found {len(comments)} comments"}

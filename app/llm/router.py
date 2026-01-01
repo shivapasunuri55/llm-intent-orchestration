@@ -1,32 +1,47 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-from pydantic import BaseModel
-from typing import Literal
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
+from app.llm.schema import QueryPlan
 
-
-class IntentOutput(BaseModel):
-    intent: Literal[
-        "USER_LOOKUP", "POST_COUNT", "COMMENT_EXISTENCE", "COMMENT_LANGUAGE", "UNKNOWN"
-    ]
-
-
-parser = PydanticOutputParser(pydantic_object=IntentOutput)
+parser = PydanticOutputParser(pydantic_object=QueryPlan)
 
 PROMPT = PromptTemplate(
     template="""
-        You are an intent classification system.
+        You are a query planning system.
 
-        Classify the user query into ONE intent:
+        Supported entities and fields:
 
-        - USER_LOOKUP → find users by name
-        - POST_COUNT → count posts by a user
-        - COMMENT_EXISTENCE → check if comments exist
-        - COMMENT_LANGUAGE → check comment language
-        - UNKNOWN → none apply
+        USER:
+        - id
+        - name
+        - username
+        - email
+        - phone
+        - website
+        - company.name
+        - address.city
+
+        POST:
+        - id
+        - userId
+        - title
+        - body
+
+        COMMENT:
+        - id
+        - postId
+        - name
+        - email
+        - body
+
+        Rules:
+        - Choose exactly ONE intent.
+        - Choose exactly ONE entity.
+        - Extract ALL relevant filters.
+        - Use only allowed fields.
+        - Use exact values from the query.
+        - If unsure, return intent UNKNOWN.
+        - Output valid JSON only.
 
         User query:
         {query}

@@ -1,52 +1,84 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from langgraph.graph import StateGraph, END
-from app.state.schema import AgentState
 
-from app.nodes.intent import parse_intent
+from app.state.schema import AgentState
+from app.nodes.intent import parse_query
 from app.nodes.approval import human_approval
 from app.nodes.users import user_lookup
-from app.nodes.posts import post_count
-from app.nodes.comments import comment_existence
+from app.nodes.posts import post_lookup
+from app.nodes.comments import comment_lookup
 
+
+# ---------------------------
+# Graph initialization
+# ---------------------------
 graph = StateGraph(AgentState)
 
-graph.add_node("intent", parse_intent)
 
-graph.add_node("approve_users", lambda s: human_approval(s, "Users API"))
-graph.add_node("approve_posts", lambda s: human_approval(s, "Posts API"))
-graph.add_node("approve_comments", lambda s: human_approval(s, "Comments API"))
+# ---------------------------
+# Core nodes
+# ---------------------------
+graph.add_node("parse_query", parse_query)
 
-graph.add_node("users", user_lookup)
-graph.add_node("posts", post_count)
-graph.add_node("comments", comment_existence)
+graph.add_node("approve_user", lambda s: human_approval(s, "User Lookup"))
+graph.add_node("approve_post", lambda s: human_approval(s, "Post Lookup"))
+graph.add_node("approve_comment", lambda s: human_approval(s, "Comment Lookup"))
 
-graph.set_entry_point("intent")
+graph.add_node("user_lookup", user_lookup)
+graph.add_node("post_lookup", post_lookup)
+graph.add_node("comment_lookup", comment_lookup)
 
 
-def route_intent(state):
-    return state.intent
+# ---------------------------
+# Entry point
+# ---------------------------
+graph.set_entry_point("parse_query")
+
+
+# ---------------------------
+# Routing logic
+# ---------------------------
+def route_by_plan(state: AgentState):
+    """
+    Route execution based on the entity extracted
+    by the LLM query planner.
+    """
+    if not state.plan:
+        return END
+
+    if state.plan.intent == "UNKNOWN":
+        return END
+
+    return state.plan.entity
 
 
 graph.add_conditional_edges(
-    "intent",
-    route_intent,
+    "parse_query",
+    route_by_plan,
     {
-        "USER_LOOKUP": "approve_users",
-        "POST_COUNT": "approve_posts",
-        "COMMENT_EXISTENCE": "approve_comments",
-        "UNKNOWN": END,
+        "user": "approve_user",
+        "post": "approve_post",
+        "comment": "approve_comment",
     },
 )
 
-graph.add_edge("approve_users", "users")
-graph.add_edge("approve_posts", "posts")
-graph.add_edge("approve_comments", "comments")
 
-graph.add_edge("users", END)
-graph.add_edge("posts", END)
-graph.add_edge("comments", END)
+# ---------------------------
+# Approval → execution edges
+# ---------------------------
+graph.add_edge("approve_user", "user_lookup")
+graph.add_edge("approve_post", "post_lookup")
+graph.add_edge("approve_comment", "comment_lookup")
 
+
+# ---------------------------
+# Terminal edges
+# ---------------------------
+graph.add_edge("user_lookup", END)
+graph.add_edge("post_lookup", END)
+graph.add_edge("comment_lookup", END)
+
+
+# ---------------------------
+# Compile agent
+# ---------------------------
 agent = graph.compile()
