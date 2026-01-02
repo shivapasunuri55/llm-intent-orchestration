@@ -7,13 +7,14 @@ from app.nodes.posts import post_lookup
 from app.nodes.comments import comment_lookup
 from app.nodes.load_history import load_history
 from app.nodes.persist_interaction import persist_interaction
-
+from app.nodes.summarize_history import summarize_history
 
 graph = StateGraph(AgentState)
 
 graph.add_node("load_history", load_history)
 graph.add_node("parse_query", parse_query)
 graph.add_node("persist_interaction", persist_interaction)
+graph.add_node("summarize_history", summarize_history)
 
 graph.add_node("approve_user", lambda s: human_approval(s, "User Lookup"))
 graph.add_node("approve_post", lambda s: human_approval(s, "Post Lookup"))
@@ -24,7 +25,8 @@ graph.add_node("post_lookup", post_lookup)
 graph.add_node("comment_lookup", comment_lookup)
 
 graph.set_entry_point("load_history")
-graph.add_edge("load_history", "parse_query")
+graph.add_edge("load_history", "summarize_history")
+graph.add_edge("summarize_history", "parse_query")
 
 
 def route_by_plan(state: AgentState):

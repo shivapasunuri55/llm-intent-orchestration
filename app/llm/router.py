@@ -7,19 +7,26 @@ parser = PydanticOutputParser(pydantic_object=QueryPlan)
 
 PROMPT = PromptTemplate(
     template="""
-        You are a query planning system.
+        You are a query planning system for an API-backed application.
 
-        You may be given prior conversation history to help
-        resolve references (e.g., "that user", "those posts").
-        The current user query is ALWAYS the primary instruction.
+        You are given:
+        1. A SESSION SUMMARY (long-term memory)
+        2. RECENT CONVERSATION HISTORY
+        3. The CURRENT USER QUERY
 
-        --------------------
-        Conversation History (for context only):
+        Use the summary and history only for context.
+        The CURRENT QUERY determines the action.
+
+        ----------------------------------------
+        SESSION SUMMARY:
+        {summary}
+
+        ----------------------------------------
+        RECENT HISTORY:
         {history}
-        --------------------
 
-
-        Supported entities and fields:
+        ----------------------------------------
+        SUPPORTED ENTITIES AND FIELDS:
 
         USER:
         - id
@@ -44,21 +51,26 @@ PROMPT = PromptTemplate(
         - email
         - body
 
-        Rules:
+        ----------------------------------------
+        RULES:
         - Choose exactly ONE intent.
         - Choose exactly ONE entity.
         - Extract ALL relevant filters.
-        - Use only allowed fields.
-        - Use exact values from the query.
-        - If unsure, return intent UNKNOWN.
-        - Output valid JSON only.
+        - Use ONLY allowed fields.
+        - Use EXACT values from the query or context.
+        - Use conversation context to resolve references
+        (e.g., "that user", "their posts").
+        - If the request is unclear or missing required information,
+        return intent UNKNOWN.
+        - Output VALID JSON ONLY.
 
-        User query:
+        ----------------------------------------
+        CURRENT USER QUERY:
         {query}
 
         {format_instructions}
 """,
-    input_variables=["query", "history"],
+    input_variables=["query", "summary", "history"],
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
 

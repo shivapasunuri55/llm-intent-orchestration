@@ -28,3 +28,20 @@ async def get_session_by_id(
     session_id: uuid.UUID,
 ) -> Session | None:
     return await db.get(Session, session_id)
+
+
+async def update_session_summary(
+    db: AsyncSession,
+    *,
+    session_id: uuid.UUID,
+    summary: str,
+):
+    try:
+        session = await get_session_by_id(db, session_id)
+        session.summary = summary
+        await db.commit()
+        await db.refresh(session)
+    except Exception:
+        await db.rollback()
+        raise
+    return session
