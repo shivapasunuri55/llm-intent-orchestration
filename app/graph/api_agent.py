@@ -5,11 +5,15 @@ from app.nodes.approval import human_approval
 from app.nodes.users import user_lookup
 from app.nodes.posts import post_lookup
 from app.nodes.comments import comment_lookup
+from app.nodes.load_history import load_history
+from app.nodes.persist_interaction import persist_interaction
+
 
 graph = StateGraph(AgentState)
 
-
+graph.add_node("load_history", load_history)
 graph.add_node("parse_query", parse_query)
+graph.add_node("persist_interaction", persist_interaction)
 
 graph.add_node("approve_user", lambda s: human_approval(s, "User Lookup"))
 graph.add_node("approve_post", lambda s: human_approval(s, "Post Lookup"))
@@ -19,7 +23,8 @@ graph.add_node("user_lookup", user_lookup)
 graph.add_node("post_lookup", post_lookup)
 graph.add_node("comment_lookup", comment_lookup)
 
-graph.set_entry_point("parse_query")
+graph.set_entry_point("load_history")
+graph.add_edge("load_history", "parse_query")
 
 
 def route_by_plan(state: AgentState):
@@ -43,6 +48,7 @@ graph.add_conditional_edges(
         "user": "approve_user",
         "post": "approve_post",
         "comment": "approve_comment",
+        "__end__": "persist_interaction",
     },
 )
 
@@ -50,8 +56,10 @@ graph.add_edge("approve_user", "user_lookup")
 graph.add_edge("approve_post", "post_lookup")
 graph.add_edge("approve_comment", "comment_lookup")
 
-graph.add_edge("user_lookup", END)
-graph.add_edge("post_lookup", END)
-graph.add_edge("comment_lookup", END)
+graph.add_edge("user_lookup", "persist_interaction")
+graph.add_edge("post_lookup", "persist_interaction")
+graph.add_edge("comment_lookup", "persist_interaction")
+
+graph.add_edge("persist_interaction", END)
 
 agent = graph.compile()

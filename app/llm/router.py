@@ -9,6 +9,16 @@ PROMPT = PromptTemplate(
     template="""
         You are a query planning system.
 
+        You may be given prior conversation history to help
+        resolve references (e.g., "that user", "those posts").
+        The current user query is ALWAYS the primary instruction.
+
+        --------------------
+        Conversation History (for context only):
+        {history}
+        --------------------
+
+
         Supported entities and fields:
 
         USER:
@@ -48,7 +58,7 @@ PROMPT = PromptTemplate(
 
         {format_instructions}
 """,
-    input_variables=["query"],
+    input_variables=["query", "history"],
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
 
